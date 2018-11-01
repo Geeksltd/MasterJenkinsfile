@@ -77,13 +77,13 @@ pipeline
 					{ 
 						docker.withRegistry(ECR_URL, ECR_CRED) 
 						{
-							docker.image(IMAGE).push(BUILD_VERSION) <<<<< pass ENVs
+							docker.image(IMAGE).push(BUILD_VERSION) 
 						} 
 					} 
                 }
             }
 
-			stage('Update the K8s deployment file') <<<<<<<<<<<<<<<<<<<
+			stage('Update the K8s deployment file') 
             {
                 steps 
                 {        
