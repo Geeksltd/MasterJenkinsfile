@@ -27,7 +27,7 @@ pipeline
 		BUILD_VERSION="v_${BUILD_NUMBER}"
 		ECR_IMAGE_URL = "${params.ecrAddress}/${IMAGE}:${BUILD_VERSION}"        		
         AWS_CREDENTIALS_ID = 'JenkinsECRAWSCredentials'
-		GIT_REPOSITORY = 'https://gitlab.com/Geeks.Microservices/accesshub.git'
+		GIT_REPOSITORY = 'git@gitlab.com:Geeks.Microservices/AccessHub.git'
 		GIT_CREDENTIALS_ID = '1ef3615c-8221-4d33-af6d-91b203d60c75'
 		BUILD_VERION_NUMBER = '0'				
 		K8S_SSH_SERVER = "${params.k8sSSHServer}"
