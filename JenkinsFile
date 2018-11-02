@@ -1,12 +1,3 @@
-def sendEmail(subject,content)
-{
-		emailext (body: content,
-			mimeType: 'text/html',
-			subject: "[Jenkins] Hub ${subject}",
-			to: "${BUILD_NOTIFICATION_RECIPIENTS}")
-			
-}
-
 pipeline 
 {
 	parameters 
@@ -37,17 +28,11 @@ pipeline
 		PRIVATE_REPOSITORY_ADDRESS_NAME = "GeeksMS"
 		AUTHENTICATION_DOMAIN = "${params.authenticationDomain}"
 		HUB_SERVICE_URL = "https://hub.app.geeks.ltd"
-		BUILD_NOTIFICATION_RECIPIENTS = "paymon@geeks.ltd.uk"
     }
     agent any
     stages{    
 			
-			stage('Delete the old version') 
-            {
-				when { expression { params.Rebuild } }
-                steps { script { deleteDir() } } 
-            }
-				
+						
             stage('Clone sources') 
             {
                 steps
@@ -115,14 +100,14 @@ pipeline
 		{
 			script 
 			{
-				sendEmail('(Failed)', 'Failed to deploy HUB to production')
+				echo 'Failed to deploy HUB to production'
 			}
 		}
 		success
 		{
 			script 
 			{
-				sendEmail('(Succeeded)','Deployed HUB to production')
+				echo 'Deployed HUB to production'
 			}
 		}
         always
