@@ -37,24 +37,6 @@ pipeline
                 }				
             }			
 
-    }        
-     post
-    {
-		failure
-		{
-			script 
-			{
-				echo 'Failed to deploy HUB to production'
-			}
-		}
-		success
-		{
-			script 
-			{
-				echo 'Deployed HUB to production'
-				sh ''' docker rmi $IMAGE | true '''
-			}
-		}        
-    }
+    }                
 }
 
