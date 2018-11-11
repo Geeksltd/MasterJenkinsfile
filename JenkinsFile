@@ -9,7 +9,7 @@ pipeline
         GIT_CREDENTIALS_ID = "TEST"
 		GIT_REPOSITORY = 'https://gitlab.com/Geeks.Microservices/AccessHub.git'		
     }
-    agent { label 'Windows' }
+    agent any
     stages
 	{    
 	         stage('Prepare credentials') 
