@@ -1,19 +1,38 @@
+import com.cloudbees.plugins.credentials.impl.*;
+import com.cloudbees.plugins.credentials.*;
+import com.cloudbees.plugins.credentials.domains.*;
+
 pipeline 
 {
     environment 
     {   
-		GIT_REPOSITORY = 'git@gitlab.com:Geeks.Microservices/AccessHub.git'		
+        GIT_CREDENTIALS_ID = "TEST"
+		GIT_REPOSITORY = 'https://gitlab.com/Geeks.Microservices/AccessHub.git'		
     }
-    agent any
+    agent { label 'Windows' }
     stages
-	{    		
+	{    
+	         stage('Prepare credentials') 
+            {
+                steps
+                {
+                    script
+                        {	
+                            
+							def git_credentials = (Credentials) new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,GIT_CREDENTIALS_ID, "description", "matt@geeks.ltd.uk", "G!7L@62017")
+							SystemCredentialsProvider.getInstance().getStore().removeCredentials(Domain.global(), git_credentials)
+                            SystemCredentialsProvider.getInstance().getStore().addCredentials(Domain.global(), git_credentials)
+                        }
+                }				
+            }
+	        
             stage('Clone sources') 
             {
                 steps
                 {
                     script
                         {						
-							git url: GIT_REPOSITORY
+							git credentialsId: GIT_CREDENTIALS_ID,  url: GIT_REPOSITORY
                         }
                 }				
             }			
@@ -33,15 +52,9 @@ pipeline
 			script 
 			{
 				echo 'Deployed HUB to production'
+				sh ''' docker rmi $IMAGE | true '''
 			}
-		}
-        always
-        {
-			script{
-				// make sure that the Docker image is removed
-				sh '''docker rmi $IMAGE | true'''
-			}
-        }
+		}        
     }
 }
 
