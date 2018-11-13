@@ -8,6 +8,9 @@ pipeline
     {   
         GIT_CREDENTIALS_ID = "TEST"
 		GIT_REPOSITORY = 'https://gitlab.com/Geeks.Microservices/AccessHub.git'		
+		CONTAINER_REGISTRY = '669486994886.dkr.ecr.eu-west-1.amazonaws.com'		
+		IMAGE = "${CONTAINER_REGISTRY}/${IMAGE}:${BUILD_VERSION}" 
+		HUB_SERVICE_URL = "https://hub.app.geeks.ltd"
     }
     agent any
     stages
@@ -25,7 +28,6 @@ pipeline
                         }
                 }				
             }
-	        
             stage('Clone sources') 
             {
                 steps
@@ -33,6 +35,17 @@ pipeline
                     script
                         {						
 							git credentialsId: GIT_CREDENTIALS_ID,  url: GIT_REPOSITORY
+                        }
+                }				
+            }
+			
+			stage('Build the source code') 
+            {
+                steps
+                {
+                    script
+                        {	
+                            sh 'docker build -t $IMAGE -f Build.Dockerfile --build-arg BUILD_NUMBER=$BUILD_NUMBER --build-arg HUB_SERVICE_URL=$HUB_SERVICE_URL '
                         }
                 }				
             }			
