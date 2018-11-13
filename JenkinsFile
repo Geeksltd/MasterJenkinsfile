@@ -7,9 +7,8 @@ pipeline
     environment 
     {   
         GIT_CREDENTIALS_ID = "TEST"
-		GIT_REPOSITORY = 'https://gitlab.com/Geeks.Microservices/AccessHub.git'		
-		CONTAINER_REGISTRY = '669486994886.dkr.ecr.eu-west-1.amazonaws.com'		
-		IMAGE = "${CONTAINER_REGISTRY}/${IMAGE}:${BUILD_VERSION}" 
+		GIT_REPOSITORY = 'https://gitlab.com/Geeks.Microservices/AccessHub.git'				
+		IMAGE = "669486994886.dkr.ecr.eu-west-1.amazonaws.com/geeksms-hub:v_${BUILD_NUMBER}" 
 		HUB_SERVICE_URL = "https://hub.app.geeks.ltd"
     }
     agent any
@@ -50,6 +49,16 @@ pipeline
                 }				
             }			
 
-    }                
+    }
+     post
+    {
+		success
+		{
+			script 
+			{
+				bat "docker rmi $IMAGE | true"
+			}
+		}     
+    }	
 }
 
