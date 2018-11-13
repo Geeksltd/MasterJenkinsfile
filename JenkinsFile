@@ -45,7 +45,7 @@ pipeline
                 {
                     script
                         {	
-                            sh 'docker build -t $IMAGE -f Build.Dockerfile --build-arg BUILD_NUMBER=$BUILD_NUMBER --build-arg HUB_SERVICE_URL=$HUB_SERVICE_URL '
+                            sh 'docker build -t $IMAGE -f Build.Dockerfile --build-arg BUILD_NUMBER=$BUILD_NUMBER --build-arg HUB_SERVICE_URL=$HUB_SERVICE_URL .'
                         }
                 }				
             }			
