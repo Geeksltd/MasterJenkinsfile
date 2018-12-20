@@ -8,7 +8,8 @@ pipeline
     {   
         GIT_CREDENTIALS_ID = "GIT_CREDENTIALS"
 		GIT_REPOSITORY = 'https://gitlab.com/Geeks.Microservices/AccessHub.git'				
-		IMAGE = "${CONTIANER_REPOSITORY_URL}:v_${BUILD_NUMBER}" 		
+		IMAGE = "${CONTIANER_REPOSITORY_URL}:v_${BUILD_NUMBER}" 
+		ACCELERATE_PACKAGE_FILENAME="packages.json"
     }
     agent any
     stages
@@ -25,7 +26,7 @@ pipeline
                             SystemCredentialsProvider.getInstance().getStore().addCredentials(Domain.global(), git_credentials)
                         }
                 }				
-            }
+            }			
             stage('Clone sources') 
             {
                 steps
@@ -43,7 +44,8 @@ pipeline
                 {
                     script
                         {	
-                            bat "docker build -t $IMAGE -f Build.Dockerfile --build-arg BUILD_NUMBER=$BUILD_NUMBER --build-arg HUB_SERVICE_URL=$HUB_SERVICE_URL ."
+							bat "accelerate-package-restore export --out %ACCELERATE_PACKAGE_FILENAME%"
+                            bat "docker build -t $IMAGE -f Build.Dockerfile --build-arg ACCELERATE_PACKAGE_FILENAME=%ACCELERATE_PACKAGE_FILENAME% --build-arg BUILD_NUMBER=$BUILD_NUMBER --build-arg HUB_SERVICE_URL=$HUB_SERVICE_URL ."
                         }
                 }				
             }			
