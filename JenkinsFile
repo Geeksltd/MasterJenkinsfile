@@ -57,7 +57,6 @@ pipeline
                 {
                     script
                         {	
-							bat "accelerate-package-restore extract --out %ACCELERATE_PACKAGE_FILENAME%"
                             bat "docker build -t $IMAGE -f Build.Dockerfile --build-arg ACCELERATE_PACKAGE_FILENAME=%ACCELERATE_PACKAGE_FILENAME% ."
                         }
                 }				
