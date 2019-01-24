@@ -13,6 +13,7 @@ pipeline
 		PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
 		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
+        PROJECT_REPOSITORY_BRANCH = "$BRANCH"
     }
     agent any
     stages
@@ -36,7 +37,7 @@ pipeline
                 {
                     script
                         {						
-							git credentialsId: REPOSITORY_CREDENTIALS_ID,  url: PROJECT_REPOSITORY_URL
+							git credentialsId: REPOSITORY_CREDENTIALS_ID,  url: PROJECT_REPOSITORY_URL, branch:
                         }
                 }				
             }
