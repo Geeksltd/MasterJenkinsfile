@@ -17,7 +17,7 @@ pipeline
     }
     agent any
     stages
-	{    
+	{    177773040999.dkr.ecr.eu-west-1.amazonaws.com/visual-spec
 	         stage('Prepare credentials') 
             {
                 steps
@@ -70,9 +70,9 @@ pipeline
                 {
                     script
                         {
-							
-                            bat "docker push $IMAGE_BUILD_VERSION"
-							bat "docker push $IMAGE_LATEST_VERSION"
+							powershell '''Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command
+                                          docker push $IMAGE_BUILD_VERSION
+                                          docker push $IMAGE_LATEST_VERSION'''
                         }
                 }				
             }			
