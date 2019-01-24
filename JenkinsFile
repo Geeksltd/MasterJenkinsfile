@@ -59,7 +59,7 @@ pipeline
                 {
                     script
                         {	
-                            bat "docker build -t $IMAGE_BUILD_VERSION -t $IMAGE_LATEST_VERSION -f Build.Dockerfile --build-arg ACCELERATE_PACKAGE_FILENAME=%ACCELERATE_PACKAGE_FILENAME% ."
+                            bat "docker build -t $IMAGE_BUILD_VERSION -t $IMAGE_LATEST_VERSION ."
                         }
                 }				
             }
