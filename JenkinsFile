@@ -84,7 +84,7 @@ pipeline
                     script
                         {
                             bat '''dotnet ecs deploy-task ^ 
-                            --task-group %PROJECT% ^
+                            --task-group %PROJECT_TASK_FAMILY_NAME% ^
                             -lt EC2 ^
                             --container-name cnt-%PROJECT% ^
                             --container-image $IMAGE_BUILD_VERSION ^
