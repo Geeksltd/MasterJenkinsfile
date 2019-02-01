@@ -75,6 +75,24 @@ pipeline
                                           docker push $IMAGE_LATEST_VERSION'''
                         }
                 }				
+            }
+
+            stage('Update the cluster') 
+            {
+                steps
+                {
+                    script
+                        {
+                            bat '''dotnet ecs deploy-task ^ 
+                            --task-group %PROJECT_TASK_FAMILY_NAME% ^
+                            -lt EC2 ^
+                            --container-name cnt-%PROJECT% ^
+                            --container-image $IMAGE_BUILD_VERSION ^
+                            --container-is-essential true ^
+                            --container-port-mapping 0:8080
+                            '''
+                        }
+                }               
             }			
 
     }     	
