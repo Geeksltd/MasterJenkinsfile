@@ -6,14 +6,16 @@ pipeline
 {
     environment 
     {   
-        REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"		
-		IMAGE_BUILD_VERSION = "${CONTIANER_REPOSITORY_URL}:v_${BUILD_NUMBER}" 
+        REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
+        IMAGE_BUILD_VERSION_TAG = "v_${BUILD_NUMBER}"
+		IMAGE_BUILD_VERSION = "${CONTIANER_REPOSITORY_URL}:${IMAGE_BUILD_VERSION_TAG}" 
 		IMAGE_LATEST_VERSION = "${CONTIANER_REPOSITORY_URL}:latest" 
 		ACCELERATE_PACKAGE_FILENAME="packages.json"
 		PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
 		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
         PROJECT_REPOSITORY_BRANCH = "$BRANCH"
+        AWS_REGION="$REGION"
     }
     agent any
     stages
@@ -83,14 +85,11 @@ pipeline
                 {
                     script
                         {
-                            bat '''dotnet ecs deploy-task ^ 
-                            --task-group %PROJECT_TASK_FAMILY_NAME% ^
-                            -lt EC2 ^
-                            --container-name cnt-%PROJECT% ^
-                            --container-image $IMAGE_BUILD_VERSION ^
-                            --container-is-essential true ^
-                            --container-port-mapping 0:8080
-                            '''
+                            bat """aws ecs register-task-definition ^
+                            --family $PROJECT_TASK_FAMILY_NAME ^
+                            --region $AWS_REGION ^
+                            --container-definitions [{ ""name"" : ""cnt-$PROJECT"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""portMappings"" : [ { ""containerPort"" : 8080 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]
+                            """  
                         }
                 }               
             }			
