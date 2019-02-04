@@ -72,8 +72,8 @@ pipeline
                 {
                     script
                         {
-							powershell """Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command
-                                          docker push %IMAGE_BUILD_VERSION%
+							powershell """Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command \
+                                          docker push %IMAGE_BUILD_VERSION% \
                                           docker push $IMAGE_LATEST_VERSION"""
                         }
                 }				
