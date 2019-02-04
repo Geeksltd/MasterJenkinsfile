@@ -72,9 +72,9 @@ pipeline
                 {
                     script
                         {
-							powershell """Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command \
-                                          docker push %IMAGE_BUILD_VERSION% \
-                                          docker push $IMAGE_LATEST_VERSION"""
+							powershell label: '', returnStatus: true, script: """Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
+                                                                                 docker push $IMAGE_BUILD_VERSION 
+                                                                                 docker push $IMAGE_LATEST_VERSION"""
                         }
                 }				
             }
@@ -85,7 +85,8 @@ pipeline
                 {
                     script
                         {
-                            powershell """\$TASK_REVISION=(aws ecs register-task-definition \
+                            powershell label: '', returnStatus: true, script: """
+                            \$TASK_REVISION=(aws ecs register-task-definition \
                             --family $PROJECT_TASK_FAMILY_NAME \
                             --region $AWS_REGION \
                             --container-definitions '[{ ""name"" : ""$PROJECT_TASK_FAMILY_NAME"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""memory"" : 500 , ""portMappings"" : [ { ""containerPort"" : 80 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]') | ConvertFrom-Json | select -expand taskDefinition | Select revision
