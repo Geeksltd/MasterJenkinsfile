@@ -50,7 +50,7 @@ pipeline
                 {
                     script
                         {						
-							bat 'echo todo : replace-in-file -m'
+							bat 'replace-in-file -m'
                         }
                 }				
             }
