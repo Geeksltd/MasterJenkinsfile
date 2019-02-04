@@ -88,7 +88,7 @@ pipeline
                             bat """aws ecs register-task-definition ^
                             --family $PROJECT_TASK_FAMILY_NAME ^
                             --region $AWS_REGION ^
-                            --container-definitions [{ ""name"" : ""cnt-$PROJECT"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""portMappings"" : [ { ""containerPort"" : 8080 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]
+                            --container-definitions "[{ ""name"" : ""cnt-$PROJECT"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""portMappings"" : [ { ""containerPort"" : 8080 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]"
                             """  
                         }
                 }               
