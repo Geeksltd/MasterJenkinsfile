@@ -79,7 +79,7 @@ pipeline
                 }				
             }
 
-            stage('Update the cluster') 
+            stage('Update the task definition') 
             {
                 steps
                 {
