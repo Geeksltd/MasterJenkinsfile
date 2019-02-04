@@ -79,21 +79,25 @@ pipeline
                 }				
             }
 
-            stage('Update the task definition') 
+            stage('Update the cluster') 
             {
                 steps
                 {
                     script
                         {
-                            bat """aws ecs register-task-definition ^
-                            --family $PROJECT_TASK_FAMILY_NAME ^
-                            --region $AWS_REGION ^
-                            --container-definitions "[{ ""name"" : ""cnt-$PROJECT_TASK_FAMILY_NAME"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""memory"" : 2500 , ""portMappings"" : [ { ""containerPort"" : 8080 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]"
-                            """  
+                            powershell """\$TASK_REVISION=(aws ecs register-task-definition \
+                            --family $PROJECT_TASK_FAMILY_NAME \
+                            --region $AWS_REGION \
+                            --container-definitions '[{ ""name"" : ""cnt-$PROJECT_TASK_FAMILY_NAME"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""memory"" : 2500 , ""portMappings"" : [ { ""containerPort"" : 8080 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]') | ConvertFrom-Json | select -expand taskDefinition
+                            
+
+
+                            """   
                         }
                 }               
-            }			
+            }
 
+          
     }     	
 }
 
