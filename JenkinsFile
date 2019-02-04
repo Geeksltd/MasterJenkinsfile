@@ -88,7 +88,7 @@ pipeline
                             powershell """\$TASK_REVISION=(aws ecs register-task-definition \
                             --family $PROJECT_TASK_FAMILY_NAME \
                             --region $AWS_REGION \
-                            --container-definitions '[{ ""name"" : ""$PROJECT_TASK_FAMILY_NAME"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""memory"" : 2500 , ""portMappings"" : [ { ""containerPort"" : 8080 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]') | ConvertFrom-Json | select -expand taskDefinition | Select revision
+                            --container-definitions '[{ ""name"" : ""$PROJECT_TASK_FAMILY_NAME"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""memory"" : 2500 , ""portMappings"" : [ { ""containerPort"" : 80 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]') | ConvertFrom-Json | select -expand taskDefinition | Select revision
 
                             aws ecs update-service \
                             --cluster $ECS_CLUSTER_NAME \
