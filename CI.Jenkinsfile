@@ -54,6 +54,17 @@ pipeline
 							bat 'replace-in-file -m'
                         }
                 }				
+            }
+
+			stage('Build the source code') 
+            {
+                steps
+                {
+                    script
+                        {	
+                            bat "docker build -t $IMAGE_BUILD_VERSION -t $IMAGE_LATEST_VERSION ."
+                        }
+                }				
             }			
           
     }     	
