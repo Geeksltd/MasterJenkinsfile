@@ -16,7 +16,7 @@ pipeline
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
         PROJECT_REPOSITORY_BRANCH = "$BRANCH"
         AWS_REGION="$REGION"        
-        TASK_ROLE_ARN ="arn:aws:iam:${AWS_ACCOUNT_NUMBER}:role/${TASK_ROLE_NAME}-runtime"
+        TASK_ROLE_ARN ="${TASK_ROLE_NAME}-runtime"
     }
     agent any
     stages
