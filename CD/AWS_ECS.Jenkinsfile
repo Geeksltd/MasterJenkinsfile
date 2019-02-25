@@ -16,11 +16,24 @@ pipeline
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
         PROJECT_REPOSITORY_BRANCH = "$BRANCH"
         AWS_REGION="$REGION"        
-        TASK_ROLE_ARN ="${TASK_ROLE_NAME}-runtime"        
+        TASK_ROLE_ARN ="${TASK_ROLE_NAME}-runtime" 
+        ErrorActionPreference ="Stop"
     }
     agent any
     stages
 	{    
+            stage('Init')
+            {
+                steps
+                    {
+                        script
+                        {
+                            ROLLBACK_DATABASE = false
+                            HAS_DB_CHANGE_SCRIPTS = false                            
+                            IS_APPLICATION_OFFLINE = false                          
+                        }
+                    }
+            }
 	         stage('Prepare credentials') 
             {
                 steps
@@ -80,6 +93,44 @@ pipeline
                 }				
             }
 
+            stage('Update database changes')
+            {
+                steps
+                {
+                    script
+                        {   
+                            dir("DB.Scripts/$BUILD_NUMBER/")        
+                            {                           
+                                withCredentials(usernamePassword(credentialsId: "$DB_CREDENTIALS",usernameVariable: 'DATABASE_USER', passwordVariable: 'DATABASE_PASSWORD'))
+                                    {
+                                        if(fileExists("/"))
+                                        {
+
+                                        }
+
+                                        try
+                                        {
+                                            powershell """                                            
+                                                        Get-ChildItem -Filter *.sql |                                   
+                                                        Foreach-Object {
+                                                            Write-Host "Running \$file"         
+                                                            \$file = \$_.FullName                                                           
+                                                            Invoke-Sqlcmd -ServerInstance $DATABASE_SERVER -Database $DATABASE_NAME -Username $DATABASE_USER -Password $DATABASE_PASSWORD -InputFile  \$file
+                                                            Write-Host "Ran \$file"
+                                                        }                                               
+                                            """
+                                        }
+                                        catch(Exception e)
+                                        {
+                                            ROLLBACK_DATABASE = true
+                                            error("Failed to update the database.");
+                                        }
+                                    }
+                            }
+                        }
+                }
+            }
+
             stage('Update the cluster') 
             {
                 steps
@@ -101,9 +152,21 @@ pipeline
                             """   
                         }
                 }               
-            }
-
-          
+            }          
     }     	
+    post
+    {
+        failure
+        {
+            //Rollback database
+            script
+            {
+                if(ROLLBACK_DATABASE)
+                {
+                    rollbackDatabase();                 
+                }                
+            }
+        }              
+    }
 }
 
