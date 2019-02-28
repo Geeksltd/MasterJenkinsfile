@@ -34,7 +34,7 @@ pipeline
                         }
                 }				
             }			
-            stage('Clone sources') 
+            stage('Clone source') 
             {
                 steps
                 {
