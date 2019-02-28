@@ -99,60 +99,13 @@ pipeline
                 {
                     script
                         {   
-                            dir("DB.Scripts/$BUILD_NUMBER/")        
-                            {                           
-                                withCredentials(usernamePassword(credentialsId: "$DB_CREDENTIALS",usernameVariable: 'DATABASE_USER', passwordVariable: 'DATABASE_PASSWORD'))
-                                    {
-                                        if(fileExists("/"))
-                                        {
 
-                                        }
-
-                                        try
-                                        {
-                                            powershell """                                            
-                                                        Get-ChildItem -Filter *.sql |                                   
-                                                        Foreach-Object {
-                                                            Write-Host "Running \$file"         
-                                                            \$file = \$_.FullName                                                           
-                                                            Invoke-Sqlcmd -ServerInstance $DATABASE_SERVER -Database $DATABASE_NAME -Username $DATABASE_USER -Password $DATABASE_PASSWORD -InputFile  \$file
-                                                            Write-Host "Ran \$file"
-                                                        }                                               
-                                            """
-                                        }
-                                        catch(Exception e)
-                                        {
-                                            ROLLBACK_DATABASE = true
-                                            error("Failed to update the database.");
-                                        }
-                                    }
-                            }
+                            def CHANGE_SCRIPTS = powershell "getDBChangeScripts"  
+                            
+                            echo CHANGE_SCRIPTS
                         }
                 }
             }
-
-            stage('Update the cluster') 
-            {
-                steps
-                {
-                    script
-                        {
-                            powershell label: '', returnStatus: true, script: """
-                            \$TASK_REVISION=(aws ecs register-task-definition \
-                            --family $PROJECT_TASK_FAMILY_NAME \
-                            --task-role-arn $TASK_ROLE_ARN \
-                            --region $AWS_REGION \
-                            --container-definitions '[{ ""name"" : ""$PROJECT_TASK_FAMILY_NAME"" , ""image"":""$IMAGE_BUILD_VERSION"" , ""memory"" : 500 , ""portMappings"" : [ { ""containerPort"" : 80 , ""hostPort"" : 0 , ""protocol"" : ""tcp"" } ] , ""essential"" : true  }]') | ConvertFrom-Json | select -expand taskDefinition | Select revision
-
-                            aws ecs update-service \
-                            --cluster $ECS_CLUSTER_NAME \
-                            --service $PROJECT_ECS_SERVICE_NAME \
-                            --region $AWS_REGION \
-                            --task-definition "$PROJECT_TASK_FAMILY_NAME:\$(\$TASK_REVISION.revision)"
-                            """   
-                        }
-                }               
-            }          
     }     	
     post
     {
