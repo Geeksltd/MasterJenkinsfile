@@ -1,3 +1,17 @@
+def runPowershell(cmd,quiet = true) {
+       def script = "powershell -ExecutionPolicy ByPass -command "+cmd;
+       if(!quiet)
+        script = "@echo off && " + script;
+
+       return bat(returnStdout:true , script: script).trim()
+}
+
+def backupDatabase()
+{
+    def backupCommand = "backupDatabase -databaseName $PROJECT -s3_object_arn_to_backup_to $DATABASE_BACKUP_LOCATION -databaseServer $DATABASE_SERVER -databaseUsername $DATABASE_MASTER_USERNAME -databasePassword $DATABASE_MASTER_PASSWORD"
+    run(backupCommand,quiet:false)
+}
+
 import com.cloudbees.plugins.credentials.impl.*;
 import com.cloudbees.plugins.credentials.*;
 import com.cloudbees.plugins.credentials.domains.*;
@@ -17,7 +31,7 @@ pipeline
         PROJECT_REPOSITORY_BRANCH = "$BRANCH"
         AWS_REGION="$REGION"        
         TASK_ROLE_ARN ="${TASK_ROLE_NAME}-runtime" 
-        ErrorActionPreference ="Stop"
+        ErrorActionPreference ="Stop"        
     }
     agent any
     stages
@@ -31,6 +45,7 @@ pipeline
                             ROLLBACK_DATABASE = false
                             HAS_DB_CHANGE_SCRIPTS = false                            
                             IS_APPLICATION_OFFLINE = false                          
+                            DATABASE_BACKUP_LOCATION="$S3_BACKUPS_BUCKET/$PROJECT/" + new Date().format("dd.MM.yyyy@hh.mm.ss") + ".bak"
                         }
                     }
             }
@@ -100,9 +115,15 @@ pipeline
                     script
                         {   
 
-                            def CHANGE_SCRIPTS = powershell "getDBChangeScripts"  
+                            def changeScripts = runPowershell("getDBChangeScripts")
                             
-                            echo CHANGE_SCRIPTS
+                            if(changeScripts?.trim())
+                            {
+                                echo "Backing up the database"
+                                backupDatabase();
+                                echo "Backed up the database"
+                            }
+
                         }
                 }
             }
