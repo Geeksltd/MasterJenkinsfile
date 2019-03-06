@@ -6,12 +6,6 @@ def runPowershell(cmd,quiet = true) {
        return bat(returnStdout:true , script: script).trim()
 }
 
-def backupDatabase()
-{
-    def backupCommand = "backupDatabase -databaseName $PROJECT -s3_object_arn_to_backup_to $DATABASE_BACKUP_LOCATION -databaseServer $DATABASE_SERVER -databaseUsername $DATABASE_MASTER_USERNAME -databasePassword $DATABASE_MASTER_PASSWORD"
-    run(backupCommand,quiet:false)
-}
-
 import com.cloudbees.plugins.credentials.impl.*;
 import com.cloudbees.plugins.credentials.*;
 import com.cloudbees.plugins.credentials.domains.*;
@@ -29,9 +23,11 @@ pipeline
 		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
         PROJECT_REPOSITORY_BRANCH = "$BRANCH"
-        AWS_REGION="$REGION"        
+        AWS_REGION="$REGION"                
         TASK_ROLE_ARN ="${TASK_ROLE_NAME}-runtime" 
-        ErrorActionPreference ="Stop"        
+        ErrorActionPreference ="Stop"  
+        DATABASE_NAME="$DATABASE_NAME"    
+
     }
     agent any
     stages
@@ -43,9 +39,12 @@ pipeline
                         script
                         {
                             ROLLBACK_DATABASE = false
-                            HAS_DB_CHANGE_SCRIPTS = false                            
+                            HAS_DB_CHANGED = false                            
                             IS_APPLICATION_OFFLINE = false                          
-                            DATABASE_BACKUP_LOCATION="$S3_BACKUPS_BUCKET/$PROJECT/" + new Date().format("dd.MM.yyyy@hh.mm.ss") + ".bak"
+                            S3_DATABASE_BACKUP_LOCATION="$S3_BACKUPS_BUCKET/$PROJECT/"
+                            DATE_TAG=new Date().format('dd.MM.yyyy@hh.mm.ss');
+                            REFERENCE_DATABASE_NAME = "$DATABASE_NAME" + "_" + DATE_TAG;
+                            COMPLETION_TAG_NAME="$DEPLOYMENT_TAG_PREFIX" + DATE_TAG
                         }
                     }
             }
@@ -114,16 +113,35 @@ pipeline
                 {
                     script
                         {   
-
-                            def changeScripts = runPowershell("getDBChangeScripts")
                             
-                            if(changeScripts?.trim())
+                           if(runPowershell("getDBChangeScripts")) 
                             {
-                                echo "Backing up the database"
-                                backupDatabase();
-                                echo "Backed up the database"
+                                HAS_DB_CHANGED = true;
+                                runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $S3_DATABASE_BACKUP_LOCATION",quiet:false)
                             }
+                        }
+                }
+            }
 
+            stage('Deploy')
+            {
+                steps
+                {
+                    script
+                        {   
+
+                            
+                        }
+                }
+            }            
+
+            stage('Tag the deployed commmit')
+            {
+                steps
+                {
+                    script
+                        {   
+                            bat 'git tag $COMPLETION_TAG_NAME $GIT_COMMIT && git push origin --tags'
                         }
                 }
             }
@@ -135,9 +153,9 @@ pipeline
             //Rollback database
             script
             {
-                if(ROLLBACK_DATABASE)
+                if(HAS_DB_CHANGED)
                 {
-                    rollbackDatabase();                 
+                    runPowershell("rollbackDatabase $REFERENCE_DATABASE_BACKUP_NAME $DATABASE_NAME",quiet:false)                
                 }                
             }
         }              
