@@ -130,7 +130,7 @@ pipeline
                     script
                         {   
 
-                            
+                            echo 'Deployment should be here.'
                         }
                 }
             }            
