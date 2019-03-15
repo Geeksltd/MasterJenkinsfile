@@ -27,7 +27,10 @@ pipeline
         TASK_ROLE_ARN ="${TASK_ROLE_NAME}-runtime" 
         ErrorActionPreference ="Stop"  
         DATABASE_NAME="$DATABASE_NAME"    
-
+        S3_BACKUPS_BUCKET="$S3_BACKUPS_BUCKET"
+        DEPLOYMENT_TAG_PREFIX="$DEPLOYMENT_TAG_PREFIX"
+        PROJECT="$PROJECT"
+        REFERENCE_DATABASE_BACKUP_NAME="$REFERENCE_DATABASE_BACKUP_NAME"
     }
     agent any
     stages
