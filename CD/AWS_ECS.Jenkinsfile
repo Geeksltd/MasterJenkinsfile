@@ -1,7 +1,11 @@
-def runPowershell(cmd,quiet = true) {
-       def script = "powershell -ExecutionPolicy ByPass -command "+cmd;
-       if(!quiet)
+def runPowershell(cmd,quiet=true) {
+       
+       def script = "powershell -ExecutionPolicy ByPass -command '"+cmd+"'";
+       
+       if(quiet)
+       {
         script = "@echo off && " + script;
+       }
 
        return bat(returnStdout:true , script: script).trim()
 }
