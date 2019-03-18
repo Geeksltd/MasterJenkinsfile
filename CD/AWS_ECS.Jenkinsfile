@@ -1,13 +1,14 @@
-def runPowershell(cmd,quiet=true) {
+def runPowershell(cmd,quiet=true) {       
+       def script ="powershell -ExecutionPolicy ByPass -command '"+cmd+"'";
        
-       def script = "powershell -ExecutionPolicy ByPass -command '"+cmd+"'";
-       
-       if(quiet)
+       if(quiet == true)
        {
-        script = "@echo off && " + script;
+           echo "running in quiet mode." + cmd
+           script = "@echo off && " + script;
+           return bat(returnStdout:true , script: script).trim()
        }
-
-       return bat(returnStdout:true , script: script).trim()
+       
+       powershell returnStatus: false, script:script
 }
 
 import com.cloudbees.plugins.credentials.impl.*;
@@ -51,7 +52,7 @@ pipeline
                             S3_DATABASE_BACKUP_LOCATION="$S3_BACKUPS_BUCKET/$PROJECT/"
                             DATE_TAG=new Date().format('dd.MM.yyyy@hh.mm.ss');
                             REFERENCE_DATABASE_NAME = "$DATABASE_NAME" + "_" + DATE_TAG;
-                            COMPLETION_TAG_NAME="$DEPLOYMENT_TAG_PREFIX" + DATE_TAG
+                            COMPLETION_TAG_NAME="${DEPLOYMENT_TAG_PREFIX}_" + DATE_TAG
                         }
                     }
             }
@@ -124,7 +125,7 @@ pipeline
                            if(runPowershell("getDBChangeScripts")) 
                             {
                                 HAS_DB_CHANGED = true;
-                                runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $S3_DATABASE_BACKUP_LOCATION",quiet:false)
+                                runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $S3_DATABASE_BACKUP_LOCATION",false)
                             }
                         }
                 }
@@ -148,7 +149,7 @@ pipeline
                 {
                     script
                         {   
-                            bat 'git tag $COMPLETION_TAG_NAME $GIT_COMMIT && git push origin --tags'
+                            bat "git tag $COMPLETION_TAG_NAME $GIT_COMMIT && git push origin --tags"
                         }
                 }
             }
@@ -162,7 +163,7 @@ pipeline
             {
                 if(HAS_DB_CHANGED)
                 {
-                    runPowershell("rollbackDatabase $REFERENCE_DATABASE_BACKUP_NAME $DATABASE_NAME",quiet:false)                
+                    runPowershell("rollbackDatabase $REFERENCE_DATABASE_BACKUP_NAME $DATABASE_NAME",false)                
                 }                
             }
         }              
