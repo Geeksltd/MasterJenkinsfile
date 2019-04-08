@@ -140,7 +140,7 @@ pipeline
                            if(runPowershell("getDBChangeScripts")) 
                             {
                                 HAS_DB_CHANGED = true;
-                                runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $S3_DATABASE_BACKUP_LOCATION",false)
+                                runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $S3_DATABASE_BACKUP_LOCATION $GIT_PREVIOUS_SUCCESSFUL_COMMIT",false)
                             }
                         }
                 }
