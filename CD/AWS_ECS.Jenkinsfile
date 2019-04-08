@@ -150,7 +150,7 @@ pipeline
                     script
                         {   
 
-                            newTaskDefinitionArn = runPowershell("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION")
+                            newTaskDefinitionArn = runPowershell("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION", false)
 
                             runPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION",false);
                             
