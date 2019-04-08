@@ -88,10 +88,12 @@ pipeline
             stage("Confirm database change scripts") {
                 when { expression { CHANGE_SCRIPTS } }
                 steps {
-                    script {
-                            APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release.", 
-                                                         ok: 'Continue',
-                                                         parameters: [booleanParam(defaultValue: true, description: 'Apply the database changes?', name: 'applyChanges')]                    
+                    script 
+                    {
+                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= runPowershell("getLastSuccessfulDeploymentCommitDate $GIT_PREVIOUS_SUCCESSFUL_COMMIT")
+                        APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release since $GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE.", 
+                                                     ok: 'Continue',
+                                                     parameters: [booleanParam(defaultValue: true, description: 'Apply the database changes?', name: 'applyChanges')]                    
                     }                
                 }
             }
