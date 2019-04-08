@@ -30,8 +30,7 @@ pipeline
         PROJECT_REPOSITORY_BRANCH = "$BRANCH"
         AWS_REGION="$REGION"                        
         ErrorActionPreference ="Stop"  
-        DATABASE_NAME="$DATABASE_NAME"    
-        S3_BACKUPS_BUCKET="$DATABASE_BACKUP_S3_BUCKET"        
+        DATABASE_NAME="$DATABASE_NAME"            
         PROJECT="$PROJECT"        
     }
     agent any
@@ -46,7 +45,6 @@ pipeline
                             ROLLBACK_DATABASE = false
                             HAS_DB_CHANGED = false                            
                             IS_APPLICATION_OFFLINE = false                          
-                            S3_DATABASE_BACKUP_LOCATION="$S3_BACKUPS_BUCKET/$PROJECT/"
                             DATE_TAG=new Date().format('dd.MM.yyyy@hh.mm.ss');
                             REFERENCE_DATABASE_NAME = "$DATABASE_NAME" + "_" + DATE_TAG;                                                        
                             APPLY_CHANGE_SCRIPTS = false;
@@ -90,7 +88,7 @@ pipeline
                 steps {
                     script 
                     {
-                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= runPowershell("getLastSuccessfulDeploymentCommitDate $GIT_PREVIOUS_SUCCESSFUL_COMMIT")
+                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= runPowershell("getLastSuccessfulDeploymentCommitDate $GIT_PREVIOUS_SUCCESSFUL_COMMIT")                        
                         APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release since $GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE.", 
                                                      ok: 'Continue',
                                                      parameters: [booleanParam(defaultValue: true, description: 'Apply the database changes?', name: 'applyChanges')]                    
@@ -140,7 +138,7 @@ pipeline
                            if(runPowershell("getDBChangeScripts")) 
                             {
                                 HAS_DB_CHANGED = true;
-                                runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $S3_DATABASE_BACKUP_LOCATION $GIT_PREVIOUS_SUCCESSFUL_COMMIT",false)
+                                runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $DATABASE_BACKUP_S3_BUCKET $GIT_PREVIOUS_SUCCESSFUL_COMMIT",false)
                             }
                         }
                 }
