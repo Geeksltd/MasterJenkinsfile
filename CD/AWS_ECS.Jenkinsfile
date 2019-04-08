@@ -31,7 +31,7 @@ pipeline
         AWS_REGION="$REGION"                        
         ErrorActionPreference ="Stop"  
         DATABASE_NAME="$DATABASE_NAME"    
-        S3_BACKUPS_BUCKET="$S3_BACKUPS_BUCKET"        
+        S3_BACKUPS_BUCKET="$DATABASE_BACKUP_S3_BUCKET"        
         PROJECT="$PROJECT"        
     }
     agent any
