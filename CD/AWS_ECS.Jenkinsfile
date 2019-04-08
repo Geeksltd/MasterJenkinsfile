@@ -1,14 +1,15 @@
-def runPowershell(cmd,quiet=true) {       
-       def script ="powershell -ExecutionPolicy ByPass -command '"+cmd+"'";
+def runPowershell(cmd,quiet=true) { 
+        
+       //cmd = '$ErrorActionPreference="Stop"; ' + cmd;
+       def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
        
        if(quiet == true)
        {
-           echo "running in quiet mode." + cmd
-           script = "@echo off && " + script;
-           return bat(returnStdout:true , script: script).trim()
+           echo "running in quiet mode." + script
+           script = "@echo off && " + script;   
        }
-       
-       powershell returnStatus: false, script:script
+
+       return bat(returnStdout:true , script: script).trim()
 }
 
 import com.cloudbees.plugins.credentials.impl.*;
@@ -27,8 +28,7 @@ pipeline
 		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
         PROJECT_REPOSITORY_BRANCH = "$BRANCH"
-        AWS_REGION="$REGION"                
-        TASK_ROLE_ARN ="${TASK_ROLE_NAME}-runtime" 
+        AWS_REGION="$REGION"                        
         ErrorActionPreference ="Stop"  
         DATABASE_NAME="$DATABASE_NAME"    
         S3_BACKUPS_BUCKET="$S3_BACKUPS_BUCKET"        
@@ -150,7 +150,7 @@ pipeline
                     script
                         {   
 
-                            newTaskDefinitionArn = runPowershell("registerNewTaskRevision -newImage $IMAGE -taskName $TASK_DEFINITION_NAME -region $REGION")
+                            newTaskDefinitionArn = runPowershell("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION")
 
                             runPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION",false);
                             
