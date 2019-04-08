@@ -20,10 +20,9 @@ pipeline
     environment 
     {   
         REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
-        IMAGE_BUILD_VERSION_TAG = "v_${BUILD_NUMBER}"
+        IMAGE_BUILD_VERSION_TAG = "${GIT_COMMIT}v_${BUILD_NUMBER}"
 		IMAGE_BUILD_VERSION = "${CONTIANER_REPOSITORY_URL}:${IMAGE_BUILD_VERSION_TAG}" 
-		IMAGE_LATEST_VERSION = "${CONTIANER_REPOSITORY_URL}:latest" 
-		ACCELERATE_PACKAGE_FILENAME="packages.json"
+		IMAGE_LATEST_VERSION = "${CONTIANER_REPOSITORY_URL}:latest" 		
 		PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
 		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
@@ -32,10 +31,8 @@ pipeline
         TASK_ROLE_ARN ="${TASK_ROLE_NAME}-runtime" 
         ErrorActionPreference ="Stop"  
         DATABASE_NAME="$DATABASE_NAME"    
-        S3_BACKUPS_BUCKET="$S3_BACKUPS_BUCKET"
-        DEPLOYMENT_TAG_PREFIX="$DEPLOYMENT_TAG_PREFIX"
-        PROJECT="$PROJECT"
-        REFERENCE_DATABASE_BACKUP_NAME="$REFERENCE_DATABASE_BACKUP_NAME"
+        S3_BACKUPS_BUCKET="$S3_BACKUPS_BUCKET"        
+        PROJECT="$PROJECT"        
     }
     agent any
     stages
@@ -51,8 +48,8 @@ pipeline
                             IS_APPLICATION_OFFLINE = false                          
                             S3_DATABASE_BACKUP_LOCATION="$S3_BACKUPS_BUCKET/$PROJECT/"
                             DATE_TAG=new Date().format('dd.MM.yyyy@hh.mm.ss');
-                            REFERENCE_DATABASE_NAME = "$DATABASE_NAME" + "_" + DATE_TAG;
-                            COMPLETION_TAG_NAME="${DEPLOYMENT_TAG_PREFIX}_" + DATE_TAG
+                            REFERENCE_DATABASE_NAME = "$DATABASE_NAME" + "_" + DATE_TAG;                                                        
+                            APPLY_CHANGE_SCRIPTS = false;
                         }
                     }
             }
@@ -79,7 +76,25 @@ pipeline
                         }
                 }				
             }
-			
+			stage("Load database changes") 
+            { 
+                steps { 
+                    script 
+                        {
+                            CHANGE_SCRIPTS = runPowershell("getDBChangeScripts -lastSuccessfulDeploymentCommit $GIT_PREVIOUS_SUCCESSFUL_COMMIT")
+                        }
+                    }           
+            }
+            stage("Confirm database change scripts") {
+                when { expression { CHANGE_SCRIPTS } }
+                steps {
+                    script {
+                            APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release.", 
+                                                         ok: 'Continue',
+                                                         parameters: [booleanParam(defaultValue: true, description: 'Apply the database changes?', name: 'applyChanges')]                    
+                    }                
+                }
+            }
 			stage('Update settings') 
             {
                 steps
@@ -89,8 +104,7 @@ pipeline
 							bat 'replace-in-file -m'
                         }
                 }				
-            }
-			
+            }			
 			stage('Build the source code') 
             {
                 steps
@@ -101,7 +115,6 @@ pipeline
                         }
                 }				
             }
-
 			stage('Push the image') 
             {
                 steps
@@ -109,14 +122,14 @@ pipeline
                     script
                         {
 							powershell label: '', returnStatus: true, script: """Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
-                                                                                 docker push $IMAGE_BUILD_VERSION 
+                                                                                 docker push $IMAGE_BUILD_VERSION
                                                                                  docker push $IMAGE_LATEST_VERSION"""
                         }
                 }				
             }
-
             stage('Update database changes')
             {
+                when { expression { CHANGE_SCRIPTS && APPLY_CHANGE_SCRIPTS } }    
                 steps
                 {
                     script
@@ -130,7 +143,6 @@ pipeline
                         }
                 }
             }
-
             stage('Deploy')
             {
                 steps
@@ -138,21 +150,13 @@ pipeline
                     script
                         {   
 
-                            echo 'Deployment should be here.'
-                        }
-                }
-            }            
+                            newTaskDefinitionArn = runPowershell("registerNewTaskRevision -newImage $IMAGE -taskName $TASK_DEFINITION_NAME -region $REGION")
 
-            stage('Tag the deployed commmit')
-            {
-                steps
-                {
-                    script
-                        {   
-                            bat "git tag $COMPLETION_TAG_NAME $GIT_COMMIT && git push origin --tags"
+                            runPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION",false);
+                            
                         }
                 }
-            }
+            }           
     }     	
     post
     {
@@ -163,7 +167,8 @@ pipeline
             {
                 if(HAS_DB_CHANGED)
                 {
-                    runPowershell("rollbackDatabase $REFERENCE_DATABASE_BACKUP_NAME $DATABASE_NAME",false)                
+                    // There is an option to restore the backup taken from S3. For now it is faster to rename the reference database.
+                    runPowershell("rollbackDatabase $DATABASE_NAME $REFERENCE_DATABASE_NAME",false)                                                  
                 }                
             }
         }              
