@@ -1,15 +1,17 @@
-def runPowershell(cmd,quiet=true) { 
+def getPowershellResult(cmd) { 
         
        //cmd = '$ErrorActionPreference="Stop"; ' + cmd;
        def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
        
-       if(quiet == true)
-       {
-           echo "running in quiet mode." + script
-           script = "@echo off && " + script;   
-       }
-
+       echo "running in quiet mode." + script
+       script = "@echo off && " + script;   
+       
        return bat(returnStdout:true , script: script).trim()
+}
+
+def runPowershell(script)
+{
+    powershell label: '', returnStatus: true, script: script;
 }
 
 import com.cloudbees.plugins.credentials.impl.*;
@@ -79,7 +81,7 @@ pipeline
                 steps { 
                     script 
                         {
-                            CHANGE_SCRIPTS = runPowershell("getDBChangeScripts -lastSuccessfulDeploymentCommit $GIT_PREVIOUS_SUCCESSFUL_COMMIT")
+                            CHANGE_SCRIPTS = getPowershellResult("getDBChangeScripts -lastSuccessfulDeploymentCommit $GIT_PREVIOUS_SUCCESSFUL_COMMIT")
                         }
                     }           
             }
@@ -88,7 +90,7 @@ pipeline
                 steps {
                     script 
                     {
-                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= runPowershell("getLastSuccessfulDeploymentCommitDate $GIT_PREVIOUS_SUCCESSFUL_COMMIT")                        
+                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= getPowershellResult("getLastSuccessfulDeploymentCommitDate $GIT_PREVIOUS_SUCCESSFUL_COMMIT")                        
                         APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release since $GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE.", 
                                                      ok: 'Continue',
                                                      parameters: [booleanParam(defaultValue: true, description: 'Apply the database changes?', name: 'applyChanges')]                    
@@ -121,9 +123,9 @@ pipeline
                 {
                     script
                         {
-							powershell label: '', returnStatus: true, script: """Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
+							runPowershell("""Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
                                                                                  docker push $IMAGE_BUILD_VERSION
-                                                                                 docker push $IMAGE_LATEST_VERSION"""
+                                                                                 docker push $IMAGE_LATEST_VERSION""")
                         }
                 }				
             }
@@ -134,12 +136,8 @@ pipeline
                 {
                     script
                         {   
-                            
-                           if(runPowershell("getDBChangeScripts")) 
-                            {
-                                HAS_DB_CHANGED = true;
-                                runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $DATABASE_BACKUP_S3_BUCKET $GIT_PREVIOUS_SUCCESSFUL_COMMIT",false)
-                            }
+                          HAS_DB_CHANGED = true;
+                          runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $DATABASE_BACKUP_S3_BUCKET $GIT_PREVIOUS_SUCCESSFUL_COMMIT")                          
                         }
                 }
             }
@@ -150,9 +148,9 @@ pipeline
                     script
                         {   
 
-                            newTaskDefinitionArn = runPowershell("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION", false)
+                            newTaskDefinitionArn = runPowershell("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION" )
 
-                            runPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION",false);
+                            runPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION");
                             
                         }
                 }
