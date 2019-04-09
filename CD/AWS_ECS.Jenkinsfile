@@ -9,9 +9,11 @@ def getPowershellResult(cmd) {
        return bat(returnStdout:true , script: script).trim()
 }
 
-def runPowershell(script)
+def runPowershell(cmd)
 {
-    powershell label: '', returnStatus: true, script: script;
+    def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
+       
+    bat(returnStdout:true , script: script).trim()
 }
 
 import com.cloudbees.plugins.credentials.impl.*;
@@ -23,9 +25,9 @@ pipeline
     environment 
     {   
         REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
-        IMAGE_BUILD_VERSION_TAG = "${GIT_COMMIT}_v_${BUILD_NUMBER}"
+        IMAGE_BUILD_VERSION_TAG = "${CONTIANER_IMAGE_TAG_PREFIX}_${GIT_COMMIT}_v_${BUILD_NUMBER}"
 		IMAGE_BUILD_VERSION = "${CONTIANER_REPOSITORY_URL}:${IMAGE_BUILD_VERSION_TAG}" 
-		IMAGE_LATEST_VERSION = "${CONTIANER_REPOSITORY_URL}:latest" 		
+		IMAGE_LATEST_VERSION = "${CONTIANER_REPOSITORY_URL}:${CONTIANER_IMAGE_TAG_PREFIX}_latest" 		
 		PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
 		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
