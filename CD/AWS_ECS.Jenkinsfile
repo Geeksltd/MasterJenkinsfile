@@ -33,7 +33,10 @@ pipeline
         AWS_REGION="$REGION"                        
         ErrorActionPreference ="Stop"  
         DATABASE_NAME="$DATABASE_NAME"            
-        PROJECT="$PROJECT"        
+        PROJECT="$PROJECT"
+        TASK_DEFINITION_NAME="$PROJECT_TASK_FAMILY_NAME"
+        SERVICE_NAME="$PROJECT_ECS_SERVICE_NAME"
+        CLUSTER_NAME="$ECS_CLUSTER_NAME"                
     }
     agent any
     stages
