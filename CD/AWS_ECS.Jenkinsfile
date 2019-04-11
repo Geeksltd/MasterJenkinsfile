@@ -171,7 +171,7 @@ pipeline
                 if(HAS_DB_CHANGED)
                 {
                     // There is an option to restore the backup taken from S3. For now it is faster to rename the reference database.
-                    runPowershell("rollbackDatabase $DATABASE_NAME $REFERENCE_DATABASE_NAME",false)                                                  
+                    runPowershell("rollbackDatabase $DATABASE_NAME $REFERENCE_DATABASE_NAME")                                                  
                 }                
             }
         }              
