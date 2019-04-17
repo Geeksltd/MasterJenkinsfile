@@ -22,6 +22,10 @@ import com.cloudbees.plugins.credentials.domains.*;
 
 pipeline 
 {
+    parameters 
+    {     
+        booleanParam(name: "rebuildDockerImage" , defaultValue : false)
+    }
     environment 
     {   
         REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
@@ -118,7 +122,7 @@ pipeline
                 {
                     script
                         {	
-                            bat "docker build -t $IMAGE_BUILD_VERSION -t $IMAGE_LATEST_VERSION ."
+                            bat "docker build -t $IMAGE_BUILD_VERSION" + (!params.rebuildDockerImage ?: "--nocache") + " -t $IMAGE_LATEST_VERSION ."
                         }
                 }				
             }
