@@ -122,7 +122,7 @@ pipeline
                 {
                     script
                         {	
-                            bat "docker build -t $IMAGE_BUILD_VERSION" + (!params.rebuildDockerImage ?: " --no-cache") + " -t $IMAGE_LATEST_VERSION ."
+                            bat "docker build -t $IMAGE_BUILD_VERSION" + (!params.rebuildDockerImage ? "" : " --no-cache") + " -t $IMAGE_LATEST_VERSION ."
                         }
                 }				
             }
