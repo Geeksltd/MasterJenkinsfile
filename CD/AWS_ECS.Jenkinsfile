@@ -13,7 +13,7 @@ def runPowershell(cmd)
 {
     def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
        
-    bat(returnStdout:true , script: script).trim()
+    bat(returnStdout:true , script: script)
 }
 
 import com.cloudbees.plugins.credentials.impl.*;
