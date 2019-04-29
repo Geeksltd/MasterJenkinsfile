@@ -42,7 +42,8 @@ pipeline
         PROJECT="$PROJECT"
         TASK_DEFINITION_NAME="$PROJECT_TASK_FAMILY_NAME"
         SERVICE_NAME="$PROJECT_ECS_SERVICE_NAME"
-        CLUSTER_NAME="$ECS_CLUSTER_NAME"                
+        CLUSTER_NAME="$ECS_CLUSTER_NAME"
+        PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT="$GIT_PREVIOUS_SUCCESSFUL_COMMIT"
     }
     agent any
     stages
@@ -90,7 +91,7 @@ pipeline
                 steps { 
                     script 
                         {
-                            CHANGE_SCRIPTS = getPowershellResult("getDBChangeScripts -lastSuccessfulDeploymentCommit $GIT_PREVIOUS_SUCCESSFUL_COMMIT")
+                            CHANGE_SCRIPTS = getPowershellResult("getDBChangeScripts -lastSuccessfulDeploymentCommit $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")
                         }
                     }           
             }
@@ -99,8 +100,8 @@ pipeline
                 steps {
                     script 
                     {
-                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= getPowershellResult("getLastSuccessfulDeploymentCommitDate $GIT_PREVIOUS_SUCCESSFUL_COMMIT")                        
-                        APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release since $GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE.", 
+                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= getPowershellResult("getLastSuccessfulDeploymentCommitDate $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")                        
+                        APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release since $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT.", 
                                                      ok: 'Continue',
                                                      parameters: [booleanParam(defaultValue: true, description: 'Apply the database changes?', name: 'applyChanges')]                    
                     }                
