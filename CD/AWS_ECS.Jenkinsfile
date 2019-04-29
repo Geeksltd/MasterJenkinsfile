@@ -42,8 +42,7 @@ pipeline
         PROJECT="$PROJECT"
         TASK_DEFINITION_NAME="$PROJECT_TASK_FAMILY_NAME"
         SERVICE_NAME="$PROJECT_ECS_SERVICE_NAME"
-        CLUSTER_NAME="$ECS_CLUSTER_NAME"
-        PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT="$GIT_PREVIOUS_SUCCESSFUL_COMMIT"
+        CLUSTER_NAME="$ECS_CLUSTER_NAME"        
     }
     agent any
     stages
@@ -60,6 +59,7 @@ pipeline
                             DATE_TAG=new Date().format('dd.MM.yyyy@hh.mm.ss');
                             REFERENCE_DATABASE_NAME = "$DATABASE_NAME" + "_" + DATE_TAG;                                                        
                             APPLY_CHANGE_SCRIPTS = false;
+                            PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT= System.getenv("GIT_PREVIOUS_SUCCESSFUL_COMMIT") ?: ""
                         }
                     }
             }
