@@ -91,7 +91,7 @@ pipeline
                 steps { 
                     script 
                         {
-                            CHANGE_SCRIPTS = getPowershellResult("getDBChangeScripts -lastSuccessfulDeploymentCommit $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")
+                            CHANGE_SCRIPTS = getPowershellResult("getDBChangeScripts $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")
                         }
                     }           
             }
