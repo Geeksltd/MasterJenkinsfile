@@ -1,4 +1,4 @@
-def getPowershellResult(cmd) { 
+def GetPowershellResult(cmd) { 
         
        //cmd = '$ErrorActionPreference="Stop"; ' + cmd;
        def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
@@ -9,11 +9,16 @@ def getPowershellResult(cmd) {
        return bat(returnStdout:true , script: script).trim()
 }
 
-def runPowershell(cmd)
+def RunPowershell(cmd)
 {
     def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
        
     bat script
+}
+
+def GetEnvironmentVariablesHashTable()
+{
+    return "{ " + new groovy.json.JsonSlurper().parseText(message).collect { k,v -> "'$k'='$v'" }.join(' ; ') + " }"
 }
 
 import com.cloudbees.plugins.credentials.impl.*;
@@ -43,6 +48,7 @@ pipeline
         TASK_DEFINITION_NAME="$PROJECT_TASK_FAMILY_NAME"
         SERVICE_NAME="$PROJECT_ECS_SERVICE_NAME"
         CLUSTER_NAME="$ECS_CLUSTER_NAME"        
+        RUNTIME_SETTINGS="$RUNTIME_ENVIRONMENT_VARIABLES"
     }
     agent any
     stages
@@ -91,7 +97,7 @@ pipeline
                 steps { 
                     script 
                         {
-                            CHANGE_SCRIPTS = getPowershellResult("getDBChangeScripts $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")
+                            CHANGE_SCRIPTS = GetPowershellResult("getDBChangeScripts $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")
                         }
                     }           
             }
@@ -100,7 +106,7 @@ pipeline
                 steps {
                     script 
                     {
-                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= getPowershellResult("getLastSuccessfulDeploymentCommitDate $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")                        
+                        GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= GetPowershellResult("getLastSuccessfulDeploymentCommitDate $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")                        
                         APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release since $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT.", 
                                                      ok: 'Continue',
                                                      parameters: [booleanParam(defaultValue: true, description: 'Apply the database changes?', name: 'applyChanges')]                    
@@ -123,7 +129,7 @@ pipeline
                 {
                     script
                         {	
-                            runPowershell("docker build -t $IMAGE_BUILD_VERSION" + (!params.rebuildDockerImage ? "" : " --no-cache") + " -t $IMAGE_LATEST_VERSION .")
+                            RunPowershell("docker build -t $IMAGE_BUILD_VERSION" + (!params.rebuildDockerImage ? "" : " --no-cache") + " -t $IMAGE_LATEST_VERSION .")
                         }
                 }				
             }
@@ -133,7 +139,7 @@ pipeline
                 {
                     script
                         {
-							runPowershell("""Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
+							RunPowershell("""Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
                                                                                  docker push $IMAGE_BUILD_VERSION
                                                                                  docker push $IMAGE_LATEST_VERSION""")
                         }
@@ -147,7 +153,7 @@ pipeline
                     script
                         {   
                           HAS_DB_CHANGED = true;
-                          runPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $DATABASE_BACKUP_S3_BUCKET $GIT_PREVIOUS_SUCCESSFUL_COMMIT")                          
+                          RunPowershell("applyDatabaseChanges $DATABASE_NAME $REFERENCE_DATABASE_NAME $DATABASE_BACKUP_S3_BUCKET $GIT_PREVIOUS_SUCCESSFUL_COMMIT")                          
                         }
                 }
             }
@@ -158,9 +164,9 @@ pipeline
                     script
                         {   
 
-                            newTaskDefinitionArn = getPowershellResult("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION" )
+                            newTaskDefinitionArn = GetPowershellResult("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION -environmentVariables @{GetEnvironmentVariablesHashTable()}" )
 
-                            runPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION");
+                            RunPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION");
                             
                         }
                 }
@@ -176,7 +182,7 @@ pipeline
                 if(HAS_DB_CHANGED)
                 {
                     // There is an option to restore the backup taken from S3. For now it is faster to rename the reference database.
-                    runPowershell("rollbackDatabase $DATABASE_NAME $REFERENCE_DATABASE_NAME")                                                  
+                    RunPowershell("rollbackDatabase $DATABASE_NAME $REFERENCE_DATABASE_NAME")                                                  
                 }                
             }
         }              
