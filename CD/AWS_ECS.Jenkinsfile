@@ -18,7 +18,11 @@ def RunPowershell(cmd)
 
 def GetEnvironmentVariablesHashTable()
 {
-    return "{ " + new groovy.json.JsonSlurper().parseText(message).collect { k,v -> "'$k'='$v'" }.join(' ; ') + " }"
+    def settings = System.getenv("RUNTIME_ENVIRONMENT_VARIABLES");
+
+    if(!settings) return "";
+
+    return "{ " + new groovy.json.JsonSlurper().parseText(settings).collect { k,v -> "'$k'='$v'" }.join(' ; ') + " }"
 }
 
 import com.cloudbees.plugins.credentials.impl.*;
@@ -48,7 +52,6 @@ pipeline
         TASK_DEFINITION_NAME="$PROJECT_TASK_FAMILY_NAME"
         SERVICE_NAME="$PROJECT_ECS_SERVICE_NAME"
         CLUSTER_NAME="$ECS_CLUSTER_NAME"        
-        RUNTIME_SETTINGS="$RUNTIME_ENVIRONMENT_VARIABLES"
     }
     agent any
     stages
