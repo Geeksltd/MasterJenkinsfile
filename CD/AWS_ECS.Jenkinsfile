@@ -16,15 +16,6 @@ def RunPowershell(cmd)
     bat script
 }
 
-def GetEnvironmentVariablesHashTable()
-{
-    def settings = System.getenv("RUNTIME_ENVIRONMENT_VARIABLES");
-
-    if(!settings) return "";
-
-    return "{ " + new groovy.json.JsonSlurper().parseText(settings).collect { k,v -> "'$k'='$v'" }.join(' ; ') + " }"
-}
-
 import com.cloudbees.plugins.credentials.impl.*;
 import com.cloudbees.plugins.credentials.*;
 import com.cloudbees.plugins.credentials.domains.*;
@@ -167,7 +158,7 @@ pipeline
                     script
                         {   
 
-                            newTaskDefinitionArn = GetPowershellResult("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION -environmentVariables @{GetEnvironmentVariablesHashTable()}" )
+                            newTaskDefinitionArn = GetPowershellResult("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION" )
 
                             RunPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION");
                             
