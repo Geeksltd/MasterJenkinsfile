@@ -167,7 +167,7 @@ pipeline
                     script
                         {   
 
-                            newTaskDefinitionArn = GetPowershellResult("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION -environmentVariables @{GetEnvironmentVariablesHashTable()}" )
+                            newTaskDefinitionArn = GetPowershellResult("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION -environmentVariables " + GetEnvironmentVariablesHashTable())
 
                             RunPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION");
                             
