@@ -22,7 +22,7 @@ def GetEnvironmentVariablesHashTable()
 
     if(!settings) return "";
 
-    return "{ " + new groovy.json.JsonSlurper().parseText(settings).collect { k,v -> "'$k'='$v'" }.join(' ; ') + " }"
+    return "@{" + new groovy.json.JsonSlurper().parseText(settings).collect { k,v -> "$k=\\\"$v\\\"" }.join(' ; ') + "}"
 }
 
 import com.cloudbees.plugins.credentials.impl.*;
