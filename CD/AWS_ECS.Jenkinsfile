@@ -40,7 +40,7 @@ pipeline
         REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
         IMAGE_BUILD_VERSION_TAG = "${CONTIANER_IMAGE_TAG_PREFIX}_${GIT_COMMIT}_v_${BUILD_NUMBER}"        
 		IMAGE_BUILD_VERSION = "${CONTIANER_REPOSITORY_URL}:${IMAGE_BUILD_VERSION_TAG}".toLowerCase()
-		IMAGE_LATEST_VERSION = "${CONTIANER_REPOSITORY_URL}:${CONTIANER_IMAGE_TAG_PREFIX}_latest".toLowerCase()
+		IMAGE_LATEST_VERSION = "${CONTIANER_REPOSITORY_URL}:latest".toLowerCase()
 		PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
 		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
@@ -167,7 +167,7 @@ pipeline
                     script
                         {   
                             def environmentVariableHashTable =  GetEnvironmentVariablesHashTable();
-                            def environmentVariableArg = environmentVariableHashTable ? "-environmentVariables " + environmentVariableHashTable : "";   
+                            def environmentVariableArg = environmentVariableHashTable ? ("-environmentVariables " + environmentVariableHashTable) : "";   
                             newTaskDefinitionArn = GetPowershellResult("registerNewTaskRevision -newImage $IMAGE_BUILD_VERSION -taskName $TASK_DEFINITION_NAME -region $REGION " + GetEnvironmentVariablesHashTable())
 
                             RunPowershell("updateService -clusterName $CLUSTER_NAME -serviceName $SERVICE_NAME -newTaskDefinitionArn $newTaskDefinitionArn -region $REGION");
