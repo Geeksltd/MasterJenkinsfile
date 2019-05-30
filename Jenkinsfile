@@ -2,6 +2,13 @@ import com.cloudbees.plugins.credentials.impl.*;
 import com.cloudbees.plugins.credentials.*;
 import com.cloudbees.plugins.credentials.domains.*;
 
+def RunPowershell(cmd)
+{
+    def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
+       
+    bat script
+}
+
 pipeline 
 {
     environment 
@@ -55,17 +62,28 @@ pipeline
                         }
                 }				
             }
-
-			stage('Build the source code') 
+             stage('Build the source code') 
             {
                 steps
                 {
                     script
-                        {	
-                            bat "docker build -t $IMAGE_BUILD_VERSION -t $IMAGE_LATEST_VERSION ."
+                        {   
+                            RunPowershell("docker build -t $IMAGE_BUILD_VERSION -t $IMAGE_LATEST_VERSION .")
                         }
-                }				
+                }               
             }			
+            stage('Push the image') 
+            {
+                steps
+                {
+                    script
+                        {
+                            RunPowershell("""Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
+                                                                                 docker push $IMAGE_BUILD_VERSION
+                                                                                 docker push $IMAGE_LATEST_VERSION""")
+                        }
+                }               
+            }
           
     }     	
 }
