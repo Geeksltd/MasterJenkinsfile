@@ -1,3 +1,7 @@
+import com.cloudbees.plugins.credentials.impl.*;
+import com.cloudbees.plugins.credentials.*;
+import com.cloudbees.plugins.credentials.domains.*;
+
 def GetPowershellResult(cmd) { 
         
        //cmd = '$ErrorActionPreference="Stop"; ' + cmd;
@@ -25,22 +29,22 @@ def GetEnvironmentVariablesHashTable()
     return "@{" + new groovy.json.JsonSlurper().parseText(settings).collect { k,v -> "$k=\\\"$v\\\"" }.join(' ; ') + "}"
 }
 
-import com.cloudbees.plugins.credentials.impl.*;
-import com.cloudbees.plugins.credentials.*;
-import com.cloudbees.plugins.credentials.domains.*;
+def GetLatestImageTagToDeploy()
+{
+    def repositoryName = "$CONTIANER_REPOSITORY_URL".split("/").last()
+    def cmd = "aws ecr describe-images --repository-name $repositoryName --region $AWS_REGION --filter tagStatus=TAGGED --query \"reverse(sort_by(imageDetails,& imagePushedAt))[?imageTags[?@ =='passed']] | [0].imageTags[?@ != 'passed'] | [0]\""
+    return GetPowershellResult(cmd);
+}
 
 pipeline 
 {
     parameters 
     {     
-        booleanParam(name: "rebuildDockerImage" , defaultValue : false)
+        booleanParam(name: "rebuildDockerImage" , defaultValue : false)        
     }
     environment 
     {   
-        REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
-        IMAGE_BUILD_VERSION_TAG = "${CONTIANER_IMAGE_TAG_PREFIX}_${GIT_COMMIT}_v_${BUILD_NUMBER}"        
-		IMAGE_BUILD_VERSION = "${CONTIANER_REPOSITORY_URL}:${IMAGE_BUILD_VERSION_TAG}".toLowerCase()
-		IMAGE_LATEST_VERSION = "${CONTIANER_REPOSITORY_URL}:latest".toLowerCase()
+        REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"
 		PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
 		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
 		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
@@ -69,8 +73,31 @@ pipeline
                             REFERENCE_DATABASE_NAME = "$DATABASE_NAME" + "_" + DATE_TAG;                                                        
                             APPLY_CHANGE_SCRIPTS = false;
                             PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT= System.getenv("GIT_PREVIOUS_SUCCESSFUL_COMMIT") ?: ""
+                            IMAGE_BUILD_VERSION = ""
+
+                          
                         }
                     }
+            }
+            stage('Retreive latest image to deploy')
+            {
+                steps
+                {
+                    script
+                    {
+                        
+                        def input = input message: "Detected the following image tag to deploy", 
+                                                     ok: 'Continue',
+                                                     parameters: [string(defaultValue: GetLatestImageTagToDeploy(), description: 'Image to deploy', name: 'imageTag')]                    
+
+                        IMAGE_BUILD_VERSION = input.imageTag;
+
+                        if(IMAGE_BUILD_VERSION?.trim() == false)
+                        {
+                            error "Please provide an image tag to deploy."
+                        }
+                    }
+                }
             }
 	         stage('Prepare credentials') 
             {
@@ -110,9 +137,11 @@ pipeline
                     script 
                     {
                         GIT_PREVIOUS_SUCCESSFUL_COMMIT_DATE= GetPowershellResult("getLastSuccessfulDeploymentCommitDate $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT")                        
-                        APPLY_CHANGE_SCRIPTS = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release since $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT.", 
+                        def configmation = input message: "Detected [$CHANGE_SCRIPTS] scripts in this release since $PREVIOUS_SUCCESSFUL_DEPLOYMENT_COMMIT.", 
                                                      ok: 'Continue',
                                                      parameters: [booleanParam(defaultValue: true, description: 'Apply the database changes?', name: 'applyChanges')]                    
+
+                        APPLY_CHANGE_SCRIPTS = configmation.applyChanges
                     }                
                 }
             }
@@ -123,28 +152,6 @@ pipeline
                     script
                         {						
 							bat 'replace-in-file -m'
-                        }
-                }				
-            }			
-			stage('Build the source code') 
-            {
-                steps
-                {
-                    script
-                        {	
-                            RunPowershell("docker build -t $IMAGE_BUILD_VERSION" + (!params.rebuildDockerImage ? "" : " --no-cache") + " -t $IMAGE_LATEST_VERSION .")
-                        }
-                }				
-            }
-			stage('Push the image') 
-            {
-                steps
-                {
-                    script
-                        {
-							RunPowershell("""Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
-                                                                                 docker push $IMAGE_BUILD_VERSION
-                                                                                 docker push $IMAGE_LATEST_VERSION""")
                         }
                 }				
             }
