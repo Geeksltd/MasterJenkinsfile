@@ -86,7 +86,7 @@ pipeline
                                                      ok: 'Continue',
                                                      parameters: [string(defaultValue: GetLatestImageTagToDeploy(), description: 'Image to deploy', name: 'imageTag')]                    
 
-                        
+                        IMAGE_BUILD_VERSION = IMAGE_BUILD_VERSION?.replace("X", "")
                         if(IMAGE_BUILD_VERSION?.trim() == false)
                         {
                             error "Please provide an image tag to deploy."
