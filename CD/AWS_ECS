@@ -82,12 +82,11 @@ pipeline
                     script
                     {
                         
-                        def input = input message: "Detected the following image tag to deploy", 
+                        IMAGE_BUILD_VERSION = input message: "Detected the following image tag to deploy", 
                                                      ok: 'Continue',
                                                      parameters: [string(defaultValue: GetLatestImageTagToDeploy(), description: 'Image to deploy', name: 'imageTag')]                    
 
-                        IMAGE_BUILD_VERSION = input.imageTag;
-
+                        
                         if(IMAGE_BUILD_VERSION?.trim() == false)
                         {
                             error "Please provide an image tag to deploy."
