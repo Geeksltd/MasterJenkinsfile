@@ -32,13 +32,8 @@ def GetEnvironmentVariablesHashTable()
 def GetLatestImageTagToDeploy()
 {
     def repositoryName = "$CONTIANER_REPOSITORY_URL".split("/").last()    
-    def cmd = "aws ecr describe-images --repository-name $repositoryName --region $AWS_REGION --filter tagStatus=TAGGED --query \"\"reverse(sort_by(imageDetails,& imagePushedAt))[?imageTags[?contains(@,'_passed')]] | [0].imageTags[?contains(@,'_passed')] | [0]\"\""
+    def cmd = "aws ecr describe-images --repository-name $repositoryName --region $AWS_REGION --filter tagStatus=TAGGED --profile $AWS_PROFILE --query \"\"reverse(sort_by(imageDetails,& imagePushedAt))[?imageTags[?contains(@,'_passed')]] | [0].imageTags[?contains(@,'_passed')] | [0]\"\""
     
-    def awsProfile = System.getenv("AWS_PROFILE");
-    if(awsProfile)    
-        cmd = cmd + " --prifle " + awsProfile;
-
-
     return GetPowershellResult(cmd);
 }
 
