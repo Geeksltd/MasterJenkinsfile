@@ -78,7 +78,7 @@ pipeline
                 {
                     script
                         {
-                            RunPowershell("""Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command 
+                            RunPowershell("""Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1 --profile $AWS_PROFILE).Command 
                                                                                  docker push $IMAGE_BUILD_VERSION
                                                                                  docker push $QA_PASSED_IMAGE_BUILD_VERSION
                                                                                  docker push $IMAGE_LATEST_VERSION""")
