@@ -78,7 +78,7 @@ pipeline
                 {
                     script
                         {
-                            RunPowershell("""Invoke-Expression -Command (aws ecr get-login --profile $AWS_PROFILE --region $REGION)
+                            RunPowershell("""Invoke-Expression -Command (aws ecr get-login --profile $AWS_PROFILE --region $REGION --no-include-email)
                                                                                  docker push $IMAGE_BUILD_VERSION
                                                                                  docker push $QA_PASSED_IMAGE_BUILD_VERSION
                                                                                  docker push $IMAGE_LATEST_VERSION""")
