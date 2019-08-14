@@ -1,0 +1,148 @@
+import com.cloudbees.plugins.credentials.impl.*;
+import com.cloudbees.plugins.credentials.*;
+import com.cloudbees.plugins.credentials.domains.*;
+
+def RunPowershell(cmd)
+{
+    def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
+       
+    bat script
+}
+
+def GetPowershellResult(cmd) { 
+        
+       //cmd = '$ErrorActionPreference="Stop"; ' + cmd;
+       def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
+       
+       echo "running in quiet mode." + script
+       script = "@echo off && " + script;   
+       
+       return bat(returnStdout:true , script: script).trim()
+}
+
+pipeline 
+{
+    environment 
+    {   
+        REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
+        QA_PASSED_IMAGE_BUILD_VERSION = "${IMAGE_BUILD_VERSION}_passed"
+		PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
+		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
+		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
+        PROJECT_REPOSITORY_BRANCH = "$BRANCH"        
+        NUGET_SERVER = "$NUGET_SERVER"        
+        NUGET_SERVER_API_KEY = "$NUGET_SERVER_API_KEY"
+    }
+    agent any
+    stages
+	{    
+	         stage('Prepare credentials') 
+            {
+                steps
+                {
+                    script
+                        {	
+                            
+							def repo_credentials = (Credentials) new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,REPOSITORY_CREDENTIALS_ID, "description", "$PROJECT_REPOSITORY_USERNAME", "$PROJECT_REPOSITORY_PASSWORD")
+							SystemCredentialsProvider.getInstance().getStore().removeCredentials(Domain.global(), repo_credentials)
+                            SystemCredentialsProvider.getInstance().getStore().addCredentials(Domain.global(), repo_credentials)
+                        }
+                }				
+            }			
+            stage('Clone source') 
+            {
+                steps
+                {
+                    script
+                        {						
+							git credentialsId: REPOSITORY_CREDENTIALS_ID,  url: PROJECT_REPOSITORY_URL, branch: PROJECT_REPOSITORY_BRANCH
+                        }
+                }				
+            }
+			stage('Select projects to publish')
+            {
+                steps
+                {
+                    script
+                    {
+                        def content = GetPowershellResult 'dotnet sln D:\\Projects\\Olive list';
+                        def projects = content.split('\n')
+   
+                        env.projectsToPublish = input message: 'User input required2', parameters: [extendedChoice(name: 'options',type:'PT_CHECKBOX',visibleItemCount: 10, value:projects.join(','), description: 'Choose packages to publish')]
+                                        
+                    }
+                }
+            }
+			stage('Update settings') 
+            {
+                steps
+                {
+                    script
+                        {						
+							bat 'replace-in-file -m'
+                        }
+                }				
+            }            
+            stage('Build the project') 
+            {
+                steps
+                {
+                    script
+                        {   
+                            RunPowershell("buildall.bat")
+                        }
+                }               
+            }            
+            stage('Build & Publish') 
+            {
+                steps
+                {
+                    script
+                        {   
+                            for(project in projectsToPublish)
+                            {
+                               def projectDirectory = new File(item).getParent();
+                               
+                               dir(projectDirectory)
+                               {
+                                  def packageName = GetPowershellResult("([xml](Get-Content -path *.csproj)).Project.PropertyGroup.PackageId")
+                                  def packageInfo = GetPowershellResult("nuget list $packageName")
+                                  def newVersion,currentVersion,versionConfirmed;  
+                                  
+                                  if(packageInfo == 'No packages found.')
+                                  {
+                                       currentVersion = "Does not exist"
+                                       newVersion = '1.0.0';
+                                  }
+                                  else 
+                                  {
+                                       currentVersion = packageInfo.split(' ').last()
+                                       def versionInfo = currentVersion.split('\\.');
+                                       def minor = versionInfo.last().toInteger() + 1
+                                       newVersion = versionInfo.init().plus(minor).join('.')
+                                  }
+
+                                  
+                                  while(!newVersion?.trim() || newVersion == currentVersion || !versionConfirmed )
+                                  {
+                                    versionConfirmed = true
+                                    newVersion = input message: "Provide $packageName new version. Current version is $currentVersion", parameters: [string(defaultValue:newVersion, description: "$packageName new version", name:'Current version')]
+                                  }
+
+                                  echo 'Creating the package ...'  
+                                  RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
+
+                                  echo 'Publishing the package ...'  
+                                  RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY -s $NUGET_SERVER")
+                               }
+                            }
+                        }
+                }               
+            }
+    }     	
+}
+
+
+
+
+
