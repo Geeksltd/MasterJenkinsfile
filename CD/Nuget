@@ -26,11 +26,11 @@ pipeline
     {   
         REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
         QA_PASSED_IMAGE_BUILD_VERSION = "${IMAGE_BUILD_VERSION}_passed"
-		PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
-		PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
-		PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
+		    PROJECT_REPOSITORY_PASSWORD="$PROJECT_REPOSITORY_PASSWORD"
+		    PROJECT_REPOSITORY_USERNAME="$PROJECT_REPOSITORY_USERNAME"
+		    PROJECT_REPOSITORY_URL = "$PROJECT_REPOSITORY_URL"
         PROJECT_REPOSITORY_BRANCH = "$BRANCH"        
-        NUGET_SERVER = "$NUGET_SERVER"        
+        NUGET_SERVER_URL = "$NUGET_SERVER_URL"        
         NUGET_SERVER_API_KEY = "$NUGET_SERVER_API_KEY"
     }
     agent any
@@ -133,7 +133,7 @@ pipeline
                                   RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
 
                                   echo 'Publishing the package ...'  
-                                  RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER ? " -s " + NUGET_SERVER : "")
+                                  RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : "")
                                }
                             }
                         }
