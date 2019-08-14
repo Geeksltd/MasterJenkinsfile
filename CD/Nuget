@@ -65,7 +65,7 @@ pipeline
                 {
                     script
                     {
-                        def content = GetPowershellResult 'dotnet sln D:\\Projects\\Olive list';
+                        def content = GetPowershellResult 'dotnet sln list';
                         def projects = content.split('\n')
    
                         env.projectsToPublish = input message: 'User input required2', parameters: [extendedChoice(name: 'options',type:'PT_CHECKBOX',visibleItemCount: 10, value:projects.join(','), description: 'Choose packages to publish')]
