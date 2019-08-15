@@ -22,6 +22,10 @@ def GetPowershellResult(cmd) {
 
 pipeline 
 {
+  parameters 
+  {    
+    booleanParam(name: "AutoIncrementMinorVersion" , defaultValue : true)
+  }
     environment 
     {   
         REPOSITORY_CREDENTIALS_ID = "REPOSITORY_CREDENTIALS"	
@@ -73,13 +77,17 @@ pipeline
                     }
                 }
             }
-			stage('Update settings') 
+			      stage('Update settings') 
             {
+                when
+                {
+                    expression { fileExists 'replace-in-file.yaml' }
+                }
                 steps
                 {
                     script
                         {						
-							bat 'replace-in-file -m'
+							             bat 'replace-in-file -m'
                         }
                 }				
             }            
@@ -89,7 +97,7 @@ pipeline
                 {
                     script
                         {   
-                            RunPowershell("buildall.bat")
+                            bat 'buildall.bat'
                         }
                 }               
             }            
@@ -106,34 +114,39 @@ pipeline
                                dir(projectDirectory)
                                {
                                   def packageName = GetPowershellResult("([xml](Get-Content -path *.csproj)).Project.PropertyGroup.PackageId")
-                                  def packageInfo = GetPowershellResult("nuget list $packageName")
-                                  def newVersion,currentVersion,versionConfirmed;  
-                                  
-                                  if(packageInfo == 'No packages found.')
-                                  {
-                                       currentVersion = "Does not exist"
-                                       newVersion = '1.0.0';
-                                  }
-                                  else 
-                                  {
-                                       currentVersion = packageInfo.split(' ').last()
-                                       def versionInfo = currentVersion.split('\\.');
-                                       def minor = versionInfo.last().toInteger() + 1
-                                       newVersion = versionInfo.init().plus(minor).join('.')
-                                  }
 
-                                  
-                                  while(!newVersion?.trim() || newVersion == currentVersion || !versionConfirmed )
+                                  stage('Publishing ' + packageName)
                                   {
-                                    versionConfirmed = true
-                                    newVersion = input message: "Provide $packageName new version. Current version is $currentVersion", parameters: [string(defaultValue:newVersion, description: "$packageName new version", name:'Current version')]
-                                  }
+                                    def packageInfo = GetPowershellResult("nuget list $packageName")
+                                    def newVersion,currentVersion,versionConfirmed;  
+                                    def versionConfirmed = params.AutoIncrementMinorVersion
 
-                                  echo 'Creating the package ...'  
-                                  RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
+                                    if(packageInfo == 'No packages found.')
+                                    {
+                                         currentVersion = "Does not exist"
+                                         newVersion = '1.0.0';
+                                    }
+                                    else 
+                                    {
+                                         currentVersion = packageInfo.split(' ').last()
+                                         def versionInfo = currentVersion.split('\\.');
+                                         def minor = versionInfo.last().toInteger() + 1
+                                         newVersion = versionInfo.init().plus(minor).join('.')
+                                    }
 
-                                  echo 'Publishing the package ...'  
-                                  RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : ""))
+                                    
+                                    while(!newVersion?.trim() || newVersion == currentVersion || !versionConfirmed )
+                                    {
+                                      versionConfirmed = true
+                                      newVersion = input message: "Provide $packageName new version. Current version is $currentVersion", parameters: [string(defaultValue:newVersion, description: "$packageName new version", name:'Current version')]
+                                    }
+
+                                    echo 'Creating the package ...'  
+                                    RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
+
+                                    echo 'Publishing the package ...'  
+                                    RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : ""))
+                                }
                                }
                           
                         }
