@@ -115,39 +115,38 @@ pipeline
                                {
                                   def packageName = GetPowershellResult("([xml](Get-Content -path *.csproj)).Project.PropertyGroup.PackageId")
 
-                                  stage('Publishing ' + packageName)
+                                 
+                                  def packageInfo = GetPowershellResult("nuget list $packageName")
+                                  def newVersion,currentVersion;  
+                                  def versionConfirmed = params.AutoIncrementMinorVersion
+
+                                  if(packageInfo == 'No packages found.')
                                   {
-                                    def packageInfo = GetPowershellResult("nuget list $packageName")
-                                    def newVersion,currentVersion;  
-                                    def versionConfirmed = params.AutoIncrementMinorVersion
+                                       currentVersion = "Does not exist"
+                                       newVersion = '1.0.0';
+                                  }
+                                  else 
+                                  {
+                                       currentVersion = packageInfo.split(' ').last()
+                                       def versionInfo = currentVersion.split('\\.');
+                                       def minor = versionInfo.last().toInteger() + 1
+                                       newVersion = versionInfo.init().plus(minor).join('.')
+                                  }
 
-                                    if(packageInfo == 'No packages found.')
-                                    {
-                                         currentVersion = "Does not exist"
-                                         newVersion = '1.0.0';
-                                    }
-                                    else 
-                                    {
-                                         currentVersion = packageInfo.split(' ').last()
-                                         def versionInfo = currentVersion.split('\\.');
-                                         def minor = versionInfo.last().toInteger() + 1
-                                         newVersion = versionInfo.init().plus(minor).join('.')
-                                    }
+                                  
+                                  while(!newVersion?.trim() || newVersion == currentVersion || !versionConfirmed )
+                                  {
+                                    versionConfirmed = true
+                                    newVersion = input message: "Provide $packageName new version. Current version is $currentVersion", parameters: [string(defaultValue:newVersion, description: "$packageName new version", name:'Current version')]
+                                  }
 
-                                    
-                                    while(!newVersion?.trim() || newVersion == currentVersion || !versionConfirmed )
-                                    {
-                                      versionConfirmed = true
-                                      newVersion = input message: "Provide $packageName new version. Current version is $currentVersion", parameters: [string(defaultValue:newVersion, description: "$packageName new version", name:'Current version')]
-                                    }
+                                  echo 'Creating the package ...'  
+                                  RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
 
-                                    echo 'Creating the package ...'  
-                                    RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
-
-                                    echo 'Publishing the package ...'  
-                                    RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : ""))
-                                }
-                               }
+                                  echo 'Publishing the package ...'  
+                                  RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : ""))
+                              }
+                               
                           
                         }
                 }               
