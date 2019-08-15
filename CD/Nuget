@@ -109,7 +109,7 @@ pipeline
                         {   
                             for(project in projectsToPublish)
                             {
-                               def projectDirectory = new File(item).getParent();
+                               def projectDirectory = new File(project).getParent();
                                
                                dir(projectDirectory)
                                {
