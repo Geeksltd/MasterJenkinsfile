@@ -118,7 +118,7 @@ pipeline
                                   stage('Publishing ' + packageName)
                                   {
                                     def packageInfo = GetPowershellResult("nuget list $packageName")
-                                    def newVersion,currentVersion,versionConfirmed;  
+                                    def newVersion,currentVersion;  
                                     def versionConfirmed = params.AutoIncrementMinorVersion
 
                                     if(packageInfo == 'No packages found.')
