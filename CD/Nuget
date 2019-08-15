@@ -2,11 +2,18 @@ import com.cloudbees.plugins.credentials.impl.*;
 import com.cloudbees.plugins.credentials.*;
 import com.cloudbees.plugins.credentials.domains.*;
 
-def RunPowershell(cmd)
+def RunPowershell(cmd,quiet=false) 
 {
-    def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
+  //cmd = '$ErrorActionPreference="Stop"; ' + cmd;
+  def script ="powershell -ExecutionPolicy ByPass -command \""+cmd+"\"";
        
-    bat script
+    if(quiet == true)
+    {
+      echo "running in quiet mode." + script
+    script = "@echo off && " + script;   
+  }
+
+  return bat(returnStdout:true , script: script).trim()
 }
 
 def GetPowershellResult(cmd) { 
@@ -153,7 +160,8 @@ pipeline
                                   RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
 
                                   echo 'Publishing the package ...'  
-                                  RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : ""))
+                                  RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : ""),quiet:true)
+                                  echo 'Published the package!'  
                               }
                                    
                             }
