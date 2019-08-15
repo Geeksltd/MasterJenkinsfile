@@ -72,8 +72,16 @@ pipeline
                         def content = GetPowershellResult 'dotnet sln list';
                         def projects = content.split('\n')
    
-                        env.projectsToPublish = input message: 'User input required2', parameters: [extendedChoice(name: 'options',type:'PT_CHECKBOX',visibleItemCount: 10, value:projects.join(','), description: 'Choose packages to publish')]
-                                        
+                        env.projectsToPublish = input message: 'User input required2', 
+                        parameters: [extendedChoice(name: 'options',type:'PT_CHECKBOX',visibleItemCount: 50, value:projects.join(','), description: 'Choose packages to publish')]
+                         
+                        
+                        if(env.projectsToPublish.isEmpty())
+                        {
+                          currentBuild.result = 'ABORTED'
+                          error('No package selected to be published')
+                        }
+
                     }
                 }
             }
@@ -107,48 +115,56 @@ pipeline
                 {
                     script
                         {   
-                            for(project in projectsToPublish)
+                            def publishJobs = [:]
+                            for(project in env.projectsToPublish.split(','))
                             {
                                def projectDirectory = new File(project).getParent();
                                
-                               dir(projectDirectory)
-                               {
-                                  def packageName = GetPowershellResult("([xml](Get-Content -path *.csproj)).Project.PropertyGroup.PackageId")
+                               publishJobs[projectDirectory] = {
+                                node {
+                                     stage(projectDirectory)
+                                     {
+                                            dir(projectDirectory)
+                                           {
+                                              def packageName = GetPowershellResult("([xml](Get-Content -path *.csproj)).Project.PropertyGroup.PackageId")
 
-                                 
-                                  def packageInfo = GetPowershellResult("nuget list $packageName")
-                                  def newVersion,currentVersion;  
-                                  def versionConfirmed = params.AutoIncrementMinorVersion
+                                             
+                                              def packageInfo = GetPowershellResult("nuget list $packageName")
+                                              def newVersion,currentVersion;  
+                                              def versionConfirmed = params.AutoIncrementMinorVersion
 
-                                  if(packageInfo == 'No packages found.')
-                                  {
-                                       currentVersion = "Does not exist"
-                                       newVersion = '1.0.0';
-                                  }
-                                  else 
-                                  {
-                                       currentVersion = packageInfo.split(' ').last()
-                                       def versionInfo = currentVersion.split('\\.');
-                                       def minor = versionInfo.last().toInteger() + 1
-                                       newVersion = versionInfo.init().plus(minor).join('.')
-                                  }
+                                              if(packageInfo == 'No packages found.')
+                                              {
+                                                   currentVersion = "Does not exist"
+                                                   newVersion = '1.0.0';
+                                              }
+                                              else 
+                                              {
+                                                   currentVersion = packageInfo.split(' ').last()
+                                                   def versionInfo = currentVersion.split('\\.');
+                                                   def minor = versionInfo.last().toInteger() + 1
+                                                   newVersion = versionInfo.init().plus(minor).join('.')
+                                              }
 
-                                  
-                                  while(!newVersion?.trim() || newVersion == currentVersion || !versionConfirmed )
-                                  {
-                                    versionConfirmed = true
-                                    newVersion = input message: "Provide $packageName new version. Current version is $currentVersion", parameters: [string(defaultValue:newVersion, description: "$packageName new version", name:'Current version')]
-                                  }
+                                              
+                                              while(!newVersion?.trim() || newVersion == currentVersion || !versionConfirmed )
+                                              {
+                                                versionConfirmed = true
+                                                newVersion = input message: "Provide $packageName new version. Current version is $currentVersion", parameters: [string(defaultValue:newVersion, description: "$packageName new version", name:'Current version')]
+                                              }
 
-                                  echo 'Creating the package ...'  
-                                  RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
+                                              echo 'Creating the package ...'  
+                                              RunPowershell("dotnet pack -p:PackageVersion=$newVersion -o $newVersion")
 
-                                  echo 'Publishing the package ...'  
-                                  RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : ""))
-                              }
-                               
-                          
+                                              echo 'Publishing the package ...'  
+                                              RunPowershell("dotnet nuget push ${newVersion}\\${packageName}.${newVersion}.nupkg -k $NUGET_SERVER_API_KEY" + (NUGET_SERVER_URL ? " -s " + NUGET_SERVER_URL : ""))
+                                          }
+                                     }
+                               }
+                          }
                         }
+
+                        parallel publishJobs
                 }               
             }
     }     	
