@@ -131,11 +131,11 @@ pipeline
                                   def packageName = GetPowershellResult("([xml](Get-Content -path *.csproj)).Project.PropertyGroup.PackageId")
 
                                  
-                                  def packageInfo = GetPowershellResult("nuget list $packageName")
+                                  def packageInfo = GetPowershellResult("nuget list $packageName | where { \$_.split(' ') -eq '$packageName' }")
                                   def newVersion,currentVersion;  
                                   def versionConfirmed = params.AutoIncrementMinorVersion
 
-                                  if(packageInfo == 'No packages found.')
+                                  if(!packageInfo)
                                   {
                                        currentVersion = "Does not exist"
                                        newVersion = '1.0.0';
