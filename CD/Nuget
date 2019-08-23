@@ -46,20 +46,7 @@ pipeline
     agent any
     stages
 	{    
-	         stage('Prepare credentials') 
-            {
-                steps
-                {
-                    script
-                        {	
-                            
-							def repo_credentials = (Credentials) new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,REPOSITORY_CREDENTIALS_ID, "description", "$PROJECT_REPOSITORY_USERNAME", "$PROJECT_REPOSITORY_PASSWORD")
-							SystemCredentialsProvider.getInstance().getStore().removeCredentials(Domain.global(), repo_credentials)
-                            SystemCredentialsProvider.getInstance().getStore().addCredentials(Domain.global(), repo_credentials)
-                        }
-                }				
-            }			
-            stage('Clone source') 
+	         stage('Clone source') 
             {
                 steps
                 {
