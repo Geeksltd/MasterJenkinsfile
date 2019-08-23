@@ -46,20 +46,7 @@ pipeline
     agent any
     stages
 	{    
-	         stage('Prepare credentials') 
-            {
-                steps
-                {
-                    script
-                        {	
-                            
-							def repo_credentials = (Credentials) new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,REPOSITORY_CREDENTIALS_ID, "description", "$PROJECT_REPOSITORY_USERNAME", "$PROJECT_REPOSITORY_PASSWORD")
-							SystemCredentialsProvider.getInstance().getStore().removeCredentials(Domain.global(), repo_credentials)
-                            SystemCredentialsProvider.getInstance().getStore().addCredentials(Domain.global(), repo_credentials)
-                        }
-                }				
-            }			
-            stage('Clone source') 
+	         stage('Clone source') 
             {
                 steps
                 {
@@ -77,17 +64,39 @@ pipeline
                     {
                         def content = GetPowershellResult 'dotnet sln list';
                         def projects = content.split('\n')
-   
-                        env.projectsToPublish = input message: 'User input required2', 
-                        parameters: [extendedChoice(name: 'options',type:'PT_CHECKBOX',visibleItemCount: 50, value:projects.join(','), description: 'Choose packages to publish')]
-                         
-                        
-                        if(env.projectsToPublish.isEmpty())
-                        {
-                          currentBuild.result = 'ABORTED'
-                          error('No package selected to be published')
+
+                        def list = [];
+                        def originalList = [];
+                        def notSortedList = [];
+                        for (key in projects) {
+                            if(key)
+                            {
+                                if(key.indexOf('.csproj') > -1){
+                                    list.add(key.split('\\\\')[0])
+                                    notSortedList.add(key.split('\\\\')[0])
+                                    originalList.add(key)
+                                }
+                            }                            
                         }
 
+                        def selectedProj = input message: 'User input required2', 
+                        parameters: [extendedChoice(name: 'options',type:'PT_CHECKBOX',visibleItemCount: 50, value:list.sort().join(','), description: 'Choose packages to publish')]
+
+                        def selected = selectedProj.split(',')
+
+                        def projectsToPublish = [];
+                        for (i = 0; i < originalList.size(); i++) {
+                            if(selected.contains(notSortedList[i]))
+                                projectsToPublish.add(originalList[i]);
+                        }
+
+                        if(projectsToPublish.isEmpty())
+                        {
+                            currentBuild.result = 'ABORTED'
+                            error('No package selected to be published')
+                        }
+
+                        env.projectsToPublish = projectsToPublish
                     }
                 }
             }
@@ -170,7 +179,6 @@ pipeline
     }     	
 }
 }
-
 
 
 
