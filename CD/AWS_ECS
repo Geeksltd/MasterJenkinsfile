@@ -141,16 +141,17 @@ pipeline
                     }                
                 }
             }
-			stage('Update settings') 
-            {
-                steps
-                {
-                    script
-                        {						
-							bat 'replace-in-file -m'
-                        }
-                }				
-            }
+		  stage('Update settings')
+           {
+                when { expression { fileExists 'replace-in-file.yaml' } }
+               steps
+               {
+                   script
+                    {
+                        bat 'replace-in-file -m'
+                    }
+               }                
+           }
             stage('Update database changes')
             {
                 when { expression { CHANGE_SCRIPTS && APPLY_CHANGE_SCRIPTS } }    
