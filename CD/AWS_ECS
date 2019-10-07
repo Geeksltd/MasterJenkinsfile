@@ -52,7 +52,8 @@ pipeline
         PROJECT="$PROJECT"
         TASK_DEFINITION_NAME="$PROJECT_TASK_FAMILY_NAME"
         SERVICE_NAME="$PROJECT_ECS_SERVICE_NAME"
-        CLUSTER_NAME="$ECS_CLUSTER_NAME"        
+        CLUSTER_NAME="$ECS_CLUSTER_NAME"
+        JOB_ID="$JOB_ID"        
     }
     agent any
     stages
@@ -182,6 +183,11 @@ pipeline
     }     	
     post
     {
+        always {
+            script {
+                def response = httpRequest ignoreSslErrors: true, url: "https://devops.app.geeks.ltd/api/build-completed/$JOB_ID"
+            }
+        }
         failure
         {
             //Rollback database
