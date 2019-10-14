@@ -185,7 +185,8 @@ pipeline
     {
         always {
             script {
-                def response = httpRequest ignoreSslErrors: true, url: "https://devops.app.geeks.ltd/api/build-completed/$JOB_ID"
+                echo "skip http request"
+                // def response = httpRequest ignoreSslErrors: true, url: "https://devops.app.geeks.ltd/api/build-completed/$JOB_ID"
             }
         }
         failure
